@@ -75,4 +75,27 @@ docker compose up --build
 ## Notes
 
 The current agent engine is deterministic so the app works immediately without paid API keys. The `backend/app/agents.py` module is structured around shared state JSON and can be upgraded to call LangGraph/OpenAI nodes behind the same contracts.
+# Roadmap
+
+This project uses a spec-driven adaptive roadmap to generate personalized learning plans. The roadmap composes several agent roles that work together to create, deliver, and evaluate learning content:
+
+- **Planner:** decomposes learning goals into milestones and modules and schedules learning paths.
+- **Teacher:** generates explanations, worked examples, and lesson content tailored to the learner's level.
+- **Socratic coach:** asks targeted questions to surface misconceptions and prompt reflection.
+- **Quiz & evaluator:** produces assessments, scores mastery, and drives spaced practice.
+- **Knowledge-gap detector:** finds missing prerequisites and adjusts the plan dynamically.
+- **Memory store:** persists progress, preferences, and short-term interaction history for personalization.
+- **Dashboard & analytics:** visualizes progress, mastery, and recommendations for learners and instructors.
+- **Research agent:** fetches and augments lessons with curated external resources.
+
+The authoritative roadmap definitions live in the `specs/` directory (see `specs/product/` and `specs/technical/`), and the runtime orchestration is implemented in `backend/app/agents.py`.
+
+To customize the roadmap behavior:
+
+- Update or extend the YAML/Markdown specs in `specs/` to change learning objectives and module structure.
+- Modify or add agent logic in `backend/app/agents.py` to change how plans are generated and executed.
+- Tune thresholds and schemas in `backend/app/schemas.py` for mastery detection and scheduling.
+
+Contributions: open focused PRs that update a spec, extend an agent, and include a short integration demo or test for the change.
+
 # adaptive_roadmap_generator
