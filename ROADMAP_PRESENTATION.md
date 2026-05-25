@@ -164,3 +164,46 @@
 ---
 
 *File:* ROADMAP_PRESENTATION.md
+
+---
+
+## Appendix — Quick Breakdown (to include in demo)
+
+What is the roadmap generator
+- A programmatic pipeline that creates a personalized learning plan (roadmap) for a learner and a chosen goal.
+- Output: ordered milestones → modules → lessons → assessments + schedule and resources (JSON/YAML).
+
+Steps — what happens
+1. Intake: receive learner profile + goal + constraints + prior history.
+2. Normalize: map inputs to canonical spec entries and infer start level.
+3. Planner: decompose goal into milestones and rough pacing.
+4. Module synthesis: create modules & lesson slots for each milestone.
+5. Content generation: Teacher + Coach produce lesson text, examples, Socratic questions via prompts.
+6. Assessment creation: Quiz agent generates questions, rubrics, passing thresholds.
+7. Validate & persist: validate against schemas, store roadmap + checkpoints in DB.
+8. Adaptation loop: after assessments, evaluator + knowledge-gap detector update roadmap (remediation, reschedule, split).
+
+What it asks (inputs)
+- Required: `goal` (topic id), `learner_profile` (background, level, hours/week, preferences).
+- Optional: prior quiz scores, specific constraints (time, tool access), content tone.
+- System-level: `max_milestones`, `mastery_threshold`, `output_format` (JSON/YAML).
+
+How it works (internals, plain)
+- Specs drive structure: `specs/` tells the planner how to split goals into milestones/modules.
+- Agents are components: Planner (structure), Teacher (content), Coach (questions), Quiz/Evaluator (assessments & scoring), Knowledge-gap Detector (remediation), Memory (persist state).
+- Prompt templates instruct the content-generation agent to return a fixed schema; validator enforces shape and repair/re-run handles malformed outputs.
+- Adaptation rules transform evaluator signals into roadmap edits (insert, split, reorder).
+
+Tech specs (concise)
+- Data model keys: `roadmap.id`, `milestones[]` → `modules[]` with `id`, `title`, `prereqs[]`, `objectives[]`, `estimate_hours`, `assessments[]`.
+- Formats: JSON or YAML machine-readable outputs.
+- APIs: `POST /generate-roadmap` (learner + goal → roadmap JSON), `POST /submit-assessment` (results → updated roadmap).
+- Storage: persistent DB for roadmaps, scores, preferences.
+- Validation: schema checks and repair heuristics; determinism via low temperature and caching.
+
+Prompting methods (short)
+- Template layers: `system` (constraints + output shape), `task` (what to produce), `example` (few-shot sample).
+- Inject variables: `learner_level`, `time_per_week`, `goal_id`, `previous_failures`.
+- Output control: require strict JSON/YAML structure and include a `status` field.
+- Few-shot: include 1–2 examples showing desired JSON shape.
+- Stability: use low temperature, consistent examples, and validate/retry on schema failure.
