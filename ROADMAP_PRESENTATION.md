@@ -126,27 +126,62 @@
 
 ## 12 — Speaker notes (4-person split)
 
-### Presenter 1 — Overview & value (opening, 1–2 minutes)
-- Say: "We build adaptive roadmaps — sequenced, personalized learning plans that adapt from data."
-- Explain: problem (one-size-fits-all), solution (spec-driven + agents), and expected outcomes (faster mastery).
-- Show: one quick before/after example (traditional syllabus vs generated roadmap).
+### Presenter 1 — Frontend / Overview & Value (opening, 1–2 minutes)
+1. One-line opener: "Adaptive roadmaps give each learner a concise, personalized learning path."  
+2. Problem statement: briefly describe the limits of static curricula and common learner pain points.  
+3. Value proposition: list three benefits — faster time-to-mastery, targeted remediation, measurable progress.  
+4. UX view: where roadmaps appear in the product and key UI elements (milestones, schedule, next action).  
+5. What learner sees: ordered milestones, estimated time, next lesson, and scheduled quizzes.  
+6. Instructor/mentor view: how mentors inspect and tweak specs to influence generated plans.  
+7. Example highlight: show a short before/after (static syllabus vs generated roadmap) and call out differences.  
+8. Data-driven personalization: explain that learner profile + history shapes content and pacing.  
+9. How front-end consumes the roadmap: roadmap JSON → UI rendering → scheduling widgets.  
+10. Error & edge handling: how the UI indicates missing content or validation failures.  
+11. Quick demo cue: tell the team which screen you'll open during the demo (dashboard or roadmap viewer).  
+12. Closing line: remind audience that the UI is the learner-facing view of the pipeline's outputs.
 
-### Presenter 2 — Architecture & flow (technical, 2–3 minutes)
-- Say: "Generation follows intake → planner → module synthesis → assessment → adapt." (walk through steps).
-- Explain each agent role in one sentence and where prompts are used.
-- Mention validation (`schemas`) and where specs live (`specs/`).
+### Presenter 2 — Prompting & Testing (technical + demo, 2–3 minutes)
+1. One-line opener: "Prompts are the contract between specs and generated content."  
+2. Prompt layers: explain `system` (constraints/schema), `task` (specific instruction), and `example` (few-shot).  
+3. Variables injected: list typical variables — `learner_level`, `time_per_week`, `goal_id`, `prior_scores`.  
+4. Output-shape enforcement: require strict JSON/YAML, `status` field, explicit keys to make downstream parsing safe.  
+5. Few-shot examples: show how 1–2 examples reduce ambiguity in model replies.  
+6. Determinism techniques: low temperature, fixed seeds, and caching identical requests.  
+7. Schema validation: run the validator to ensure fields present and correct types; repair heuristics if needed.  
+8. Testing workflow: unit test prompt templates with mocked model replies; integration test end-to-end generation.  
+9. Failure modes and mitigation: malformed JSON, missing assessments, or out-of-scope content — how to detect and rerun.  
+10. Safety/content filtering: basic checks for unsafe or irrelevant external resources in Research outputs.  
+11. Example snippet to show: system + task + sample output (one slide, copyable).  
+12. Demo action: show a raw model reply and the same reply after validation/repair so mentors see difference.
 
-### Presenter 3 — Live example & comparison (demo, 3–4 minutes)
-- Say: "We'll demonstrate two profiles for the same topic and compare outputs." 
-- Action items:
-  - Load `User A` profile, run roadmap generation, present milestone list.
-  - Load `User B` profile, run again, present differences.
-- Highlight: why outputs differ (background, hours/week, goals).
+### Presenter 3 — Backend & Pipeline Details (technical, 2–3 minutes)
+1. One-line opener: "The backend orchestrates agents, validates outputs, stores state, and applies adaptation rules."  
+2. Pipeline steps (concise): Intake → Planner → Module Synthesis → Content Generation → Assessment → Validate → Persist → Adapt.  
+3. Where code lives: point to `backend/app/agents.py`, `backend/app/schemas.py`, and `specs/`.  
+4. Data model specifics: `roadmap.id`, `milestones[]`, `modules[]` with `estimate_hours`, `objectives[]`, `assessments[]`.  
+5. Planner heuristics: how `max_hours`, `hours/week`, and spec templates influence milestone splitting and pacing.  
+6. Module synthesis: how the planner creates module slots and how `Teacher` fills them with content.  
+7. Assessment & scoring: how questions, rubrics, and passing thresholds are attached and evaluated.  
+8. Knowledge-gap detection: mapping incorrect assessment items to objective tags and remediation mapping.  
+9. Storage & state: where roadmaps, scores, and preferences persist and how they affect future runs.  
+10. APIs to showcase: `POST /generate-roadmap` and `POST /submit-assessment` and expected payload shapes.  
+11. Validation & repair logic: how malformed outputs are fixed or escalated to human review.  
+12. Observability: logs, metrics to track generation errors, and caching of repeated requests.
 
-### Presenter 4 — Adaptation, metrics & next steps (wrap-up, 1–2 minutes)
-- Say: "Roadmaps adapt: remediation, re-scheduling, and mastery tracking are automatic." 
-- Show key metrics to watch (mastery rate, time-to-mastery).
-- Call to action: how mentors can tweak `specs/`, propose next experiments (A/B on thresholds).
+### Presenter 4 — Live Demo, Adaptation & Metrics (demo lead, 3–4 minutes)
+1. One-line opener: "We'll demonstrate two profiles generating different roadmaps, then trigger adaptation."  
+2. Demo checklist: mention the three prepared files (`profile_novice.json`, `profile_experienced.json`, `fail_result.json`).  
+3. Step 1: run `profile_novice` → show roadmap JSON; highlight milestones, first module, and scheduled quiz.  
+4. Step 2: run `profile_experienced` → show differences side-by-side (scope, assessment difficulty, project emphasis).  
+5. Step 3: submit `fail_result` for novice → show updated roadmap with inserted remediation and reschedule.  
+6. Explain adaptation mapping: show how wrong answers map to objectives → remediation module inserted.  
+7. Talk metrics: point out mastery threshold, estimated time, and re-test scheduling visible in roadmap.  
+8. Troubleshooting live: what to do if generation fails (rerun with stricter prompt or inspect raw reply).  
+9. Audience cue: indicate which URLs/files you'll open and which terminal commands you'll run.  
+10. Closing demo note: summarize what changed after the failing assessment and why that matters for learners.  
+11. Next-step ask: propose an experiment (A/B test thresholds or try alternative prompt templates).  
+12. Final wrap: point back to `specs/` for mentors to edit curriculum and to `backend/app/agents.py` to tweak orchestration.
+
 
 ---
 
