@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  background: #f4f7f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: #172026;
+  background:
+    radial-gradient(circle at top left, rgba(244, 182, 63, 0.12), transparent 28rem),
+    linear-gradient(135deg, #f4f7f7 0%, #fff8f1 42%, #eef7f4 100%);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-teal focus:ring-offset-2 focus:ring-offset-mist;
+}
+
+.panel {
+  @apply border border-black/10 bg-white/85 shadow-panel backdrop-blur;
+  border-radius: 8px;
+}
+
+.icon-button {
+  @apply focus-ring inline-flex h-10 w-10 items-center justify-center border border-black/10 bg-white text-ink transition hover:border-teal hover:text-teal;
+  border-radius: 8px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
