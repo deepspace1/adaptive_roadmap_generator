@@ -1,101 +1,147 @@
-# Adaptive AI Personal Tutor
+# Adaptive AI Personal Tutor 🧠✨
 
-A production-shaped multi-agent AI tutor prototype with a FastAPI backend and a Next.js App Router frontend.
+A production-shaped, multi-agent AI tutor prototype designed to deliver personalized, adaptive learning experiences. Built with a **FastAPI** backend and a **Next.js App Router** frontend, this project orchestrates multiple specialized AI agent roles to assess, teach, quiz, and track concept mastery for learners.
 
-## What is included
+---
 
-- JWT authentication with refresh tokens
-- Adaptive learning roadmap generation
-- Multi-agent tutor loop: planner, teacher, Socratic coach, quiz, evaluator, knowledge gaps, memory, dashboard, and research
-- Mastery tracking and quiz history
-- Dashboard analytics with Chart.js
-- Polished responsive UI with TailwindCSS, Zustand, and lucide-react
-- Docker Compose services for frontend, backend, Postgres, Redis, and ChromaDB
-- OpenRouter integration using `z-ai/glm-4.5-air:free`
+## 📺 Project Demo Video
+Watch the interactive walkthrough of the onboarding, diagnostic assessment, personalized roadmap generation, and Socratic tutoring loop:
 
-## Specs
+<video src="./media/roadmap_generator_demo.mp4" controls width="100%"></video>
 
-This project now has a spec-driven roadmap for making the tutor more personalized and adaptive:
+---
 
-- `SPEC_DRIVEN_CODING.md`
-- `specs/product/adaptive-tutor-goal.md`
-- `specs/technical/tutor-tools.md`
-- `specs/technical/backend-api-data.md`
-- `specs/technical/frontend-experience.md`
-- `specs/technical/implementation-plan.md`
+## 📸 Screenshots
 
-## Quick Start
+### 1. Concept Mastery Dashboard
+Track your daily learning analytics, overall concept mastery percentage, weak prerequisite topics, and current progress milestones.
+![Concept Mastery Dashboard](./media/dashboard.png)
 
-### Backend
+### 2. Personal Learning Roadmap
+Visualized personalized learning roadmap sequenced dynamically according to the learner's skill check performance.
+![Learning Roadmap](./media/roadmap.png)
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+---
+
+## 🗺️ How the Roadmap Generation Works
+
+The core of the personalization engine is the **Adaptive Roadmap Generator**. When a learner specifies a learning goal, the tutor goes through the following multi-stage pipeline:
+
+```mermaid
+graph TD
+    A[User Inputs Learning Goal] --> B[Diagnostic Skill Check]
+    B --> C[Compute Unique Learner Fingerprint]
+    C --> D[LLM Generation: z-ai/glm-4.5-air:free]
+    D --> E{Robust JSON Parser & Validator}
+    E -- Validation Error --> F[Error-Aware LLM Retry Loop]
+    F --> D
+    E -- Success --> G[Self-Healing Duplicate Title Resolver]
+    G --> H[Activate Initial Module & Save Roadmap]
 ```
 
-The backend uses `backend/tutor.db` by default for local development.
+### 1. User Profiling & Uniqueness Fingerprint
+A unique SHA-256 fingerprint is calculated from the learner's profile, including:
+- Learning goals, target subject, and self-assessed level
+- AI-assessed level (from the onboarding diagnostic check)
+- Learning style preference (e.g., example-first, visual, Socratic)
+- Target deadlines and daily study time commitment
 
-### Frontend
+This fingerprint forces the LLM to vary phase emphasis, module ordering, practice projects, examples, and resources, ensuring that **no two users get the exact same roadmap**, even for the same topic.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+### 2. Multi-Agent Orchestration Loop
+The tutor orchestration engine (`backend/app/agents.py`) runs several specialized agent nodes:
+- **Planner Agent**: Schedules milestones, goals, and structures module dependencies.
+- **Teacher Agent**: Adapts lesson styling and builds interactive code examples.
+- **Socratic Coach**: Asks deep conceptual questions to surface student misconceptions.
+- **Quiz Agent**: Generates adaptive multiple-choice quizzes mapping to the user's mastery level.
+- **Knowledge-Gap Detector**: Identifies missing prerequisites and flags weak topics for review.
+- **Memory Agent**: Persists logs, key mistakes, and preferences.
+- **Dashboard Agent**: Syncs metrics and compiles analytics for Next.js.
 
-Open `http://localhost:3000`.
+### 3. Robust Validation & Self-Healing
+To guarantee stability, the generated roadmap undergoes strict JSON validation. If errors occur, the backend handles them gracefully:
+* **Conciseness Enforcement**: Constrains the LLM to 3-4 phases and 2-4 modules per phase, with 1-2 sentence descriptions, preventing token truncation.
+* **Escaping Guardrails**: Prevents unescaped double quotes syntax errors in JSON keys/values.
+* **Self-Healing Duplicates**: If duplicate module or resource titles are generated, they are dynamically made unique (e.g. appending numeric suffixes or parent module names) instead of raising exceptions.
+* **Detailed Error Retries**: The retry loop catches exact validation error exceptions and feeds them back into the LLM on subsequent attempts for immediate self-correction.
 
-## Environment
+---
 
-Backend:
+## 🛠️ Tech Stack
 
-```bash
-JWT_SECRET=change-me
-OPENROUTER_API_KEY=your-openrouter-key
+- **Backend**: FastAPI, Python 3.10+, SQLite (local DB metadata), Uvicorn.
+- **Frontend**: Next.js (App Router), React 18, TailwindCSS, Zustand (State Management), Chart.js (Analytics), Lucide-React (Icons).
+- **LLM Engine**: OpenRouter Integration (defaulting to `z-ai/glm-4.5-air:free` or configurable via environment variables).
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.10+ installed
+- Node.js 18+ installed
+
+### 1. Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Create and activate a python virtual environment:
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Start the FastAPI server:
+   ```bash
+   uvicorn app.main:app --reload --port 8000
+   ```
+   *The backend will run on `http://localhost:8000` and initialize a local SQLite file `tutor.db`.*
+
+### 2. Frontend Setup
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+2. Install package dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Next.js development server:
+   ```bash
+   npm run dev
+   ```
+   *Open `http://localhost:3000` to view the application in your browser.*
+
+---
+
+## ⚙️ Environment Configuration
+
+### Backend Environment (`backend/.env` or root `.env`)
+Create a `.env` file in the root or backend directory:
+```env
+JWT_SECRET=your-secure-jwt-key
+OPENROUTER_API_KEY=your-openrouter-api-key
 OPENROUTER_MODEL=z-ai/glm-4.5-air:free
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 REFRESH_TOKEN_EXPIRE_DAYS=14
 ```
 
-Frontend:
-
-```bash
+### Frontend Environment (`frontend/.env` or root `.env`)
+Create a `.env` file in the frontend directory:
+```env
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-## Docker
+---
 
+## 🐳 Docker Deployment
+
+To spin up the entire stack (Frontend, Backend, and local services) inside Docker containers:
 ```bash
 docker compose up --build
 ```
-
-## Notes
-
-The current agent engine is deterministic so the app works immediately without paid API keys. The `backend/app/agents.py` module is structured around shared state JSON and can be upgraded to call LangGraph/OpenAI nodes behind the same contracts.
-# Roadmap
-
-This project uses a spec-driven adaptive roadmap to generate personalized learning plans. The roadmap composes several agent roles that work together to create, deliver, and evaluate learning content:
-
-- **Planner:** decomposes learning goals into milestones and modules and schedules learning paths.
-- **Teacher:** generates explanations, worked examples, and lesson content tailored to the learner's level.
-- **Socratic coach:** asks targeted questions to surface misconceptions and prompt reflection.
-- **Quiz & evaluator:** produces assessments, scores mastery, and drives spaced practice.
-- **Knowledge-gap detector:** finds missing prerequisites and adjusts the plan dynamically.
-- **Memory store:** persists progress, preferences, and short-term interaction history for personalization.
-- **Dashboard & analytics:** visualizes progress, mastery, and recommendations for learners and instructors.
-- **Research agent:** fetches and augments lessons with curated external resources.
-
-The authoritative roadmap definitions live in the `specs/` directory (see `specs/product/` and `specs/technical/`), and the runtime orchestration is implemented in `backend/app/agents.py`.
-
-To customize the roadmap behavior:
-
-- Update or extend the YAML/Markdown specs in `specs/` to change learning objectives and module structure.
-- Modify or add agent logic in `backend/app/agents.py` to change how plans are generated and executed.
-- Tune thresholds and schemas in `backend/app/schemas.py` for mastery detection and scheduling.
-
-Contributions: open focused PRs that update a spec, extend an agent, and include a short integration demo or test for the change.
-
-# adaptive_roadmap_generator
+This runs the frontend, backend, and sets up dependencies.

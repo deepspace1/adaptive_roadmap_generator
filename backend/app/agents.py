@@ -15,8 +15,8 @@ from .llm import OPENROUTER_MODEL, chat_completion, llm_configured
 
 
 logger = logging.getLogger(__name__)
-ROADMAP_LLM_ATTEMPTS = max(1, int(os.getenv("ROADMAP_LLM_ATTEMPTS", "2")))
-ROADMAP_MAX_TOKENS = max(1800, int(os.getenv("ROADMAP_MAX_TOKENS", "3600")))
+ROADMAP_LLM_ATTEMPTS = max(1, int(os.getenv("ROADMAP_LLM_ATTEMPTS", "3")))
+ROADMAP_MAX_TOKENS = max(1800, int(os.getenv("ROADMAP_MAX_TOKENS", "4000")))
 
 TOPIC_LIBRARY = {
     "python": ["Variables", "Data Types", "Conditionals", "Loops", "Functions", "Lists", "Dictionaries", "Files", "Errors", "Classes"],
@@ -666,17 +666,44 @@ def validate_roadmap(roadmap: dict[str, Any]) -> dict[str, Any]:
             for key in ["module_id", "title", "description", "estimated_hours", "difficulty", "skills_taught", "prerequisites", "resources", "mastery_criteria", "practice_project", "status"]:
                 if key not in module:
                     raise ValueError(f"Module is missing {key}")
-            title_key = re.sub(r"\W+", " ", str(module["title"]).lower()).strip()
+            
+            # Self-heal duplicate module title
+            original_title = str(module["title"])
+            title_key = re.sub(r"\W+", " ", original_title.lower()).strip()
             if title_key in module_titles:
-                raise ValueError(f"Duplicate module title: {module['title']}")
+                suffix = 2
+                new_title = f"{original_title} ({suffix})"
+                new_title_key = re.sub(r"\W+", " ", new_title.lower()).strip()
+                while new_title_key in module_titles:
+                    suffix += 1
+                    new_title = f"{original_title} ({suffix})"
+                    new_title_key = re.sub(r"\W+", " ", new_title.lower()).strip()
+                module["title"] = new_title
+                title_key = new_title_key
             module_titles.add(title_key)
+            
             if not isinstance(module.get("resources"), list) or len(module["resources"]) < 2:
                 raise ValueError(f"Module {module['module_id']} must include at least 2 resources")
+            
             for resource in module["resources"]:
-                resource_key = re.sub(r"\W+", " ", str(resource.get("title", "")).lower()).strip()
+                # Self-heal duplicate resource title
+                original_res_title = str(resource.get("title", ""))
+                resource_key = re.sub(r"\W+", " ", original_res_title.lower()).strip()
                 if resource_key in resource_titles:
-                    raise ValueError(f"Duplicate resource title: {resource.get('title')}")
+                    new_res_title = f"{original_res_title} ({module['title']})"
+                    new_res_key = re.sub(r"\W+", " ", new_res_title.lower()).strip()
+                    if new_res_key in resource_titles:
+                        suffix = 2
+                        new_res_title = f"{original_res_title} ({module['title']} - {suffix})"
+                        new_res_key = re.sub(r"\W+", " ", new_res_title.lower()).strip()
+                        while new_res_key in resource_titles:
+                            suffix += 1
+                            new_res_title = f"{original_res_title} ({module['title']} - {suffix})"
+                            new_res_key = re.sub(r"\W+", " ", new_res_title.lower()).strip()
+                    resource["title"] = new_res_title
+                    resource_key = new_res_key
                 resource_titles.add(resource_key)
+                
             module_ids.add(str(module["module_id"]))
             if not first_module_seen:
                 module["status"] = "available"
@@ -794,11 +821,13 @@ Return ONLY a JSON object with this exact structure:
 }}
 
 Rules:
-- Generate between 3-5 phases based on complexity
-- Each phase should have 3-6 modules
-- First module of phase 1 must have status "available", all others start "locked"
-- Tailor depth/breadth to the assessed_level
-- If deadline is tight, reduce total_duration_weeks accordingly
+- Generate between 3-4 phases based on complexity.
+- Each phase should have 2-4 modules.
+- Keep description and summary fields short and concise (1-2 sentences max) to prevent JSON size truncation.
+- Do not use double quotes inside string values; use single quotes instead (e.g. 'BS4' instead of \"BS4\") to prevent JSON syntax errors.
+- First module of phase 1 must have status "available", all others start "locked".
+- Tailor depth/breadth to the assessed_level.
+- If deadline is tight, reduce total_duration_weeks accordingly.
 - Module titles must be concrete curriculum topics, not generic labels. Bad: "Core concepts", "Essential tools", "Worked examples". Good for stock market: "Market Structure and Participants", "Risk, Return, and Position Sizing", "Valuation: Multiples and DCF".
 - Every module title must be unique across the whole roadmap.
 - Every phase must represent a distinct progression stage with a specific phase_goal.
@@ -824,16 +853,26 @@ Rules:
         logger.info("Roadmap LLM attempt %s finished in %.2fs", attempt + 1, elapsed)
         if result is None:
             raise ValueError("LLM roadmap generation returned no response")
+        err_msg = "Unknown error"
         if result.get("content"):
             try:
                 roadmap = validate_roadmap(extract_json_object(result["content"]))
                 logger.info("Roadmap generation completed in %.2fs", time.perf_counter() - started_at)
                 return roadmap
             except (json.JSONDecodeError, ValueError) as exc:
+                err_msg = str(exc)
                 logger.warning("Roadmap JSON parse/validation failed on attempt %s: %s", attempt + 1, exc)
         else:
+            err_msg = str(result.get("error") or "empty completion")
             logger.warning("Roadmap generation provider error on attempt %s: %s", attempt + 1, result.get("error"))
-        messages.append({"role": "user", "content": "Your previous response was invalid or too generic. Return only strict JSON matching the requested schema. Use unique, concrete module titles and unique resources. No markdown, no code fences, no comments."})
+        messages.append({
+            "role": "user",
+            "content": (
+                f"Your previous response was invalid and failed with error: {err_msg}. "
+                "Please fix this error (e.g., correct JSON formatting, ensure all resource/module titles are unique, "
+                "and do not use double quotes inside string values). Return the complete corrected JSON."
+            )
+        })
     raise ValueError("Roadmap generation failed because the model did not return valid JSON")
 
 
